@@ -19,6 +19,9 @@ public class Controller : MonoBehaviour
 
     public float _maxRotationSpeed = 1;
 
+    public Rigidbody _rb;
+    public Animator _anim;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -55,6 +58,10 @@ public class Controller : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //Lancer l'animation de rotation aux roues en fonction de la vitesse du player
+        float _palyerVelocity = Mathf.Abs(_rb.velocity.x);
+        _anim.SetFloat("Speed", _palyerVelocity);
+
         // Récupère les données de mouvement
         float rotationAngle = _moveDirection.x;
         float acceleration = _moveDirection.y;

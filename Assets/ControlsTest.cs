@@ -22,8 +22,12 @@ public class ControlsTest : MonoBehaviour
     public CinemachineBrain _brain;
     public CinemachineVirtualCamera _camera1;
     public CinemachineVirtualCamera _camera2;
-    
-    
+
+    public Rigidbody _rb;
+    public Animator[] _anim;
+    public float test = 1;
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -79,6 +83,16 @@ public class ControlsTest : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //Lancer l'animation de rotation aux roues en fonction de la vitesse du player
+        float _animationSpeed = _currentSpeed / _maxSpeed;
+        _anim[0].SetFloat("Speed", _animationSpeed);
+
+        for (int i = 0; i < _anim.Length; i++)
+        {
+            _anim[i].SetFloat("Speed", _animationSpeed);
+        }
+       
+
         // Récupère les données de mouvement
         float rotationAngle = _moveDirection.x;
         float acceleration = _moveDirection.y;
