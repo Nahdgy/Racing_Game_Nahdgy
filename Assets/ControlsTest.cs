@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Cinemachine;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,16 +18,22 @@ public class ControlsTest : MonoBehaviour
     public float _maxSpeed;
     private float _currentSpeed;
     private float _currentAcceleration;
+    public float _rotationRoll;
 
     public float _maxRotationSpeed=1;
 
     public CinemachineBrain _brain;
     public CinemachineVirtualCamera _camera1;
-    public CinemachineVirtualCamera _camera2;
+    public CinemachineVirtualCamera _camera2; 
+    public CinemachineVirtualCamera _vcam;
 
     public Rigidbody _rb;
     public Animator[] _anim;
     public float test = 1;
+    public ParticleSystem[] _FX;
+    public GameObject roues;
+   
+
 
 
     // Start is called before the first frame update
@@ -80,9 +88,32 @@ public class ControlsTest : MonoBehaviour
         _moveDirection = context.ReadValue<Vector2>();
     }
 
+    private void Shake(bool _canShake)
+    {
+        if(_currentSpeed > 12)
+        {
+            _canShake = true;
+        }
+        else 
+        { 
+            _canShake = false; 
+        }
+
+        if(_canShake)
+        {
+            _vcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = 2.0f;
+        }
+        else
+        {
+            _vcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = 0f;
+        }
+
+    }
+
     // Update is called once per frame
     void Update()
     {
+        Shake(true);
         //Lancer l'animation de rotation aux roues en fonction de la vitesse du player
         float _animationSpeed = _currentSpeed / _maxSpeed;
         _anim[0].SetFloat("Speed", _animationSpeed);
@@ -91,7 +122,15 @@ public class ControlsTest : MonoBehaviour
         {
             _anim[i].SetFloat("Speed", _animationSpeed);
         }
-       
+
+        for (int i = 0; i < _FX.Length; i++)
+        {
+            if(_currentSpeed > 15 && _currentSpeed < 16)
+            {
+                _FX[i].Play(); 
+            }
+        }
+      
 
         // Récupère les données de mouvement
         float rotationAngle = _moveDirection.x;
@@ -137,6 +176,22 @@ public class ControlsTest : MonoBehaviour
         transform.Rotate(0,rotationAngle,0);
         transform.position = transform.position +
                              transform.forward * (_currentSpeed * Time.deltaTime);
+
+        //Fait tourner le volant et les roues
+       
+        //_rotationRoll = Mathf.Clamp(_rotationRoll, 180f, -180f);
+
+        if (rotationAngle != 0)
+        {
+            _rotationRoll+= rotationAngle;
+        }
+       if (rotationAngle == 0)
+        {
+           _rotationRoll = 0;
+        }
+        Vector3 _rotate = new Vector3(0,0,-_rotationRoll);
+        roues.transform.localEulerAngles = _rotate;
+        
         
     }
 }
