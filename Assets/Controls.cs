@@ -116,7 +116,7 @@ public partial class @Controls : IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""54dfaac1-37ee-4329-9657-290ab35c4f6a"",
-                    ""path"": ""<Keyboard>/tab"",
+                    ""path"": ""<Keyboard>/f"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",

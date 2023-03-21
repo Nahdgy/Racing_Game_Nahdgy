@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -5,6 +6,7 @@ using Cinemachine;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class ControlsTest : MonoBehaviour
 {
@@ -15,17 +17,20 @@ public class ControlsTest : MonoBehaviour
 
     private PlayerInput _inputs;
 
-    public float _maxSpeed;
-    private float _currentSpeed;
+    private int _tabposition = 0;
+    public float _maxSpeed, _nitroSpeed, _normalSpeed;
+    public float _currentSpeed;
     private float _currentAcceleration;
     public float _rotationRoll;
 
-    public float _maxRotationSpeed=1;
+    public float _maxRotationSpeed = 1;
 
     public CinemachineBrain _brain;
-    public CinemachineVirtualCamera _camera1;
-    public CinemachineVirtualCamera _camera2; 
-    public CinemachineVirtualCamera _vcam;
+    public CinemachineVirtualCamera _firstcam;
+    public CinemachineVirtualCamera _POVcam;
+    public CinemachineVirtualCamera _thirdcam;
+    public CinemachineVirtualCamera _backcam;
+    public CinemachineVirtualCamera[] _tabCam;
 
     public Rigidbody _rb;
     public Animator[] _anim;
@@ -34,11 +39,19 @@ public class ControlsTest : MonoBehaviour
     public GameObject roues;
    
 
+    public float _nitroTimer;
+   
+    public bool _canSpeed;
+    public Image _nitroImage;
+
+
 
 
     // Start is called before the first frame update
     void Start()
     {
+        _normalSpeed = _maxSpeed;
+        _canSpeed = true;
         _inputs = GetComponent<PlayerInput>();
 
         InputAction move = _inputs.actions["Move"];
@@ -46,10 +59,10 @@ public class ControlsTest : MonoBehaviour
         move.started += OnMoveStarted;
         move.performed += OnMovePerformed;
         move.canceled += OnMoveCanceled;
-        
+
         InputAction cameraChange = _inputs.actions["ChangeCamera"];
 
-        cameraChange.performed += OnChangeCamera;
+        cameraChange.started += OnChangeCamera;
 
     }
 
@@ -57,16 +70,26 @@ public class ControlsTest : MonoBehaviour
     {
         var currentCamera = _brain.ActiveVirtualCamera as CinemachineVirtualCamera;
 
-        if (currentCamera == _camera1)
+        if (currentCamera == _thirdcam)
         {
-            _camera1.Priority = 0;
-            _camera2.Priority = 10;
+            _thirdcam.Priority = 0;
+            _firstcam.Priority = 10;
         }
-        else
+
+        if (currentCamera == _firstcam)
         {
-            _camera1.Priority = 10;
-            _camera2.Priority = 0;
+            _firstcam.Priority = 0;
+            _POVcam.Priority = 10;
+
         }
+        if (currentCamera == _POVcam)
+        {
+            _POVcam.Priority = 0;
+            _thirdcam.Priority = 10;
+        }
+
+
+
     }
 
     private void OnMoveCanceled(InputAction.CallbackContext obj)
@@ -77,121 +100,165 @@ public class ControlsTest : MonoBehaviour
     public void OnMovePerformed(InputAction.CallbackContext context)
     {
         Debug.Log($"Move performed : {context.ReadValue<Vector2>()}");
-        
+
         _moveDirection = context.ReadValue<Vector2>();
     }
 
     private void OnMoveStarted(InputAction.CallbackContext context)
     {
         Debug.Log($"Move started : {context.ReadValue<Vector2>()}");
-        
+
         _moveDirection = context.ReadValue<Vector2>();
     }
 
     private void Shake(bool _canShake)
     {
-        if(_currentSpeed > 12)
+        if (_currentSpeed > 12)
         {
             _canShake = true;
         }
-        else 
-        { 
-            _canShake = false; 
+        else
+        {
+            _canShake = false;
         }
 
-        if(_canShake)
+        if (_canShake)
         {
-            _vcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = 2.0f;
+            _thirdcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = 2.0f;
         }
         else
         {
-            _vcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = 0f;
+            _thirdcam.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>().m_AmplitudeGain = 0f;
         }
 
     }
-
-    // Update is called once per frame
-    void Update()
+    private void Nitro()
     {
-        Shake(true);
-        //Lancer l'animation de rotation aux roues en fonction de la vitesse du player
-        float _animationSpeed = _currentSpeed / _maxSpeed;
-        _anim[0].SetFloat("Speed", _animationSpeed);
-
-        for (int i = 0; i < _anim.Length; i++)
+        if (_canSpeed && Input.GetKey(KeyCode.Space))
         {
-            _anim[i].SetFloat("Speed", _animationSpeed);
+            StartCoroutine(StartNitro());
         }
 
-        for (int i = 0; i < _FX.Length; i++)
+    }
+    private IEnumerator StartNitro()
+    {
+        float _lerpDuration = 0.5f;
+        float _timer = 0f;
+        while (_timer < _lerpDuration)
         {
-            if(_currentSpeed > 15 && _currentSpeed < 16)
+            _timer += Time.deltaTime;
+            _maxSpeed = Mathf.Lerp(_normalSpeed, _nitroSpeed, _timer / _lerpDuration);
+            _nitroImage.fillAmount = Mathf.Lerp(1f, 0f, _timer / _lerpDuration);
+            _canSpeed = false;
+            yield return null;
+        }
+        yield return new WaitForSeconds(_nitroTimer);
+        _timer = 0f;
+        while (_timer < _lerpDuration)
+        {
+            _timer += Time.deltaTime;
+            _maxSpeed = Mathf.Lerp(_nitroSpeed, _normalSpeed, _timer / _lerpDuration);
+            yield return null;
+        } 
+        yield return new WaitForSeconds(_nitroTimer);
+        _timer = 0f;
+        while(_timer < _lerpDuration)
+        {
+            _timer += Time.deltaTime;
+            _nitroImage.fillAmount = Mathf.Lerp(0f, 1f, _timer / _lerpDuration);
+            _canSpeed = true;
+            yield return null;
+        }
+        
+    }
+    
+
+
+
+        // Update is called once per frame
+    void Update()
+        {
+
+            Shake(true);
+            Nitro();
+            //Lancer l'animation de rotation aux roues en fonction de la vitesse du player
+            float _animationSpeed = _currentSpeed / _maxSpeed;
+            _anim[0].SetFloat("Speed", _animationSpeed);
+
+            for (int i = 0; i < _anim.Length; i++)
             {
-                _FX[i].Play(); 
+                _anim[i].SetFloat("Speed", _animationSpeed);
             }
-        }
-      
 
-        // Récupère les données de mouvement
-        float rotationAngle = _moveDirection.x;
-        float acceleration = _moveDirection.y;
-
-        // Si on accélère pas (laché)
-        if (acceleration == 0)
-        {
-            _currentAcceleration = Mathf.Lerp(_currentAcceleration, 0, Time.deltaTime);
-        }
-        else if (acceleration < 0)
-        {
-            //Si on est en train d'avancer, on freine
-            if (_currentAcceleration > 0)
+            for (int i = 0; i < _FX.Length; i++)
             {
-                _currentAcceleration -= Time.deltaTime;
+                if (_currentSpeed > 15 && _currentSpeed < 16)
+                {
+                    _FX[i].Play();
+                }
             }
-            else // On recule
+
+
+            // Récupère les données de mouvement
+            float rotationAngle = _moveDirection.x;
+            float acceleration = _moveDirection.y;
+
+            // Si on accélère pas (laché)
+            if (acceleration == 0)
             {
+                _currentAcceleration = Mathf.Lerp(_currentAcceleration, 0, Time.deltaTime);
+            }
+            else if (acceleration < 0)
+            {
+                //Si on est en train d'avancer, on freine
+                if (_currentAcceleration > 0)
+                {
+                    _currentAcceleration -= Time.deltaTime;
+                }
+                else // On recule
+                {
+                    _currentAcceleration += acceleration * Time.deltaTime;
+                }
+            }
+            else
+            {
+                // On accélère progressivement
                 _currentAcceleration += acceleration * Time.deltaTime;
             }
-        }
-        else
-        {
-            // On accélère progressivement
-            _currentAcceleration += acceleration * Time.deltaTime;
-        }
 
-        _currentAcceleration = Mathf.Clamp(_currentAcceleration,-1,1);
+            _currentAcceleration = Mathf.Clamp(_currentAcceleration, -1, 1);
 
-        if (_currentAcceleration >= 0)
-        {
-            _currentSpeed = Mathf.Lerp(0, _maxSpeed, _currentAcceleration);
-        }
-        else
-        {
-            _currentSpeed = Mathf.Lerp(0, -_maxSpeed, -_currentAcceleration);
-        }
-        
-        // Influence accelerations sur la rotation
-        rotationAngle = rotationAngle * _currentAcceleration*_maxRotationSpeed*Time.deltaTime;
-        
-        transform.Rotate(0,rotationAngle,0);
-        transform.position = transform.position +
-                             transform.forward * (_currentSpeed * Time.deltaTime);
+            if (_currentAcceleration >= 0)
+            {
+                _currentSpeed = Mathf.Lerp(0, _maxSpeed, _currentAcceleration);
+            }
+            else
+            {
+                _currentSpeed = Mathf.Lerp(0, -_maxSpeed, -_currentAcceleration);
+            }
 
-        //Fait tourner le volant et les roues
-       
-        //_rotationRoll = Mathf.Clamp(_rotationRoll, 180f, -180f);
+            // Influence accelerations sur la rotation
+            rotationAngle = rotationAngle * _currentAcceleration * _maxRotationSpeed * Time.deltaTime;
 
-        if (rotationAngle != 0)
-        {
-            _rotationRoll+= rotationAngle;
+            transform.Rotate(0, rotationAngle, 0);
+            transform.position = transform.position +
+                                 transform.forward * (_currentSpeed * Time.deltaTime);
+
+            //Fait tourner le volant et les roues
+
+            //_rotationRoll = Mathf.Clamp(_rotationRoll, 180f, -180f);
+
+            if (rotationAngle != 0)
+            {
+                _rotationRoll += rotationAngle;
+            }
+            if (rotationAngle == 0)
+            {
+                _rotationRoll = 0;
+            }
+            Vector3 _rotate = new Vector3(0, 0, -_rotationRoll);
+            roues.transform.localEulerAngles = _rotate;
+
+
         }
-       if (rotationAngle == 0)
-        {
-           _rotationRoll = 0;
-        }
-        Vector3 _rotate = new Vector3(0,0,-_rotationRoll);
-        roues.transform.localEulerAngles = _rotate;
-        
-        
-    }
 }
