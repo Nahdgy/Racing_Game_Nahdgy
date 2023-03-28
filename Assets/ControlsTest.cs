@@ -37,8 +37,10 @@ public class ControlsTest : MonoBehaviour
     public float test = 1;
     public ParticleSystem[] _FX;
     public GameObject roues;
-   
 
+    public AudioSource _nitroSound;
+    [SerializeField]
+    private CarSound _carSound;
     public float _nitroTimer;
    
     public bool _canSpeed;
@@ -87,7 +89,21 @@ public class ControlsTest : MonoBehaviour
             _POVcam.Priority = 0;
             _thirdcam.Priority = 10;
         }
+   
 
+    }
+    private void BackCam()
+    {
+        var currentCamera = _brain.ActiveVirtualCamera as CinemachineVirtualCamera;
+        if (Input.GetKey(KeyCode.F))
+        {
+            _backcam.Priority = 20;
+
+        }
+        else
+        {
+            _backcam.Priority = 0;
+        }
 
 
     }
@@ -136,6 +152,7 @@ public class ControlsTest : MonoBehaviour
     {
         if (_canSpeed && Input.GetKey(KeyCode.Space))
         {
+            _nitroSound.Play();
             StartCoroutine(StartNitro());
         }
 
@@ -173,14 +190,15 @@ public class ControlsTest : MonoBehaviour
     }
     
 
-
-
         // Update is called once per frame
     void Update()
         {
 
             Shake(true);
             Nitro();
+        BackCam();
+            _carSound.PrecessContinuousAudioPitch(_currentSpeed/_maxSpeed);
+
             //Lancer l'animation de rotation aux roues en fonction de la vitesse du player
             float _animationSpeed = _currentSpeed / _maxSpeed;
             _anim[0].SetFloat("Speed", _animationSpeed);
